@@ -1,0 +1,15 @@
+# OS-specific
+.DS_Store
+Thumbs.db
+
+# Temporary / swap files
+*.swp
+*.tmp
+
+# Secrets / env
+*.env
+*.key
+.github_token
+
+# Logs
+*.log
