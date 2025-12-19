@@ -47,7 +47,7 @@ log_step "Locale C.UTF-8 generated"
 sudo update-locale LANG=C.UTF-8
 log_step "System locale updated to C.UTF-8"
 current_timezone=$(timedatectl show --property=Timezone --value)
-current_locale=$(locale | grep LANG= | cut -d= -f2)
+current_locale=$LANG
 log_block_result "Locales & Timezone configured: Timezone=$current_timezone, Locale=$current_locale"
 
 log_section "SSH Key Setup"
@@ -63,13 +63,17 @@ log_block_result "SSH key setup completed successfully"
 
 log_section "Base Packages"
 sudo apt-get install -y make
-log_step "make installed: $(dpkg -s make | grep Version | awk '{print $2}')"
+make_version=$(dpkg-query -W -f='${Version}' make)
+log_step "make installed: $make_version"
 sudo apt-get install -y tree
-log_step "tree installed: $(dpkg -s tree | grep Version | awk '{print $2}')"
+tree_version=$(dpkg-query -W -f='${Version}' tree)
+log_step "tree installed: $tree_version"
 sudo apt-get install -y vim
-log_step "vim installed: $(dpkg -s vim | grep Version | awk '{print $2}')"
+vim_version=$(dpkg-query -W -f='${Version}' vim)
+log_step "vim installed: $vim_version"
 sudo apt-get install -y git
-log_step "git installed: $(dpkg -s git | grep Version | awk '{print $2}')"
+git_version=$(dpkg-query -W -f='${Version}' git)
+log_step "git installed: $git_version"
 log_block_result "Base Packages installation completed successfully"
 
 log_section "Kernel Parameters"
@@ -105,7 +109,9 @@ sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyring
 log_step "Docker GPG key downloaded"
 sudo chmod a+r /etc/apt/keyrings/docker.asc
 log_step "Permissions set on Docker GPG key"
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}") stable" | sudo tee /etc/apt/sources.list.d/docker.list
+arch=$(dpkg --print-architecture)
+codename=$(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
+echo "deb [arch=$arch signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $codename stable" | sudo tee /etc/apt/sources.list.d/docker.list
 log_step "Docker repository added"
 sudo apt-get update
 log_step "Package lists updated"
