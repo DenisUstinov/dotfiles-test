@@ -35,31 +35,43 @@ sudo apt-get clean
 log_block_result_ok "Cleanup completed successfully"
 
 log_section "Locales & Timezone"
-
-# Целевые значения для реальной установки
 TARGET_TIMEZONE="UTC"
 TARGET_LOCALE="C.UTF-8"
-
 sudo timedatectl set-timezone "$TARGET_TIMEZONE"
 sudo apt-get install -y locales
 sudo locale-gen "$TARGET_LOCALE"
 sudo update-locale LANG="$TARGET_LOCALE"
-
-# Тестовые значения для проверки ошибки (симуляция несовпадения)
-TEST_TARGET_TIMEZONE="GMT"     # временно, чтобы проверить условие ошибки
-TEST_TARGET_LOCALE="en_US.UTF-8"
-
 current_timezone=$(timedatectl show --property=Timezone --value)
 current_locale=$(locale | grep LANG= | cut -d= -f2)
-
 errors=()
-[[ "$current_timezone" != "$TEST_TARGET_TIMEZONE" ]] && errors+=("timezone: desired $TEST_TARGET_TIMEZONE, current $current_timezone")
-[[ "$current_locale" != "$TEST_TARGET_LOCALE" ]] && errors+=("locale: desired $TEST_TARGET_LOCALE, current $current_locale")
-
+[[ "$current_timezone" != "$TARGET_TIMEZONE" ]] && errors+=("timezone: desired $TARGET_TIMEZONE, current $current_timezone")
+[[ "$current_locale" != "$TARGET_LOCALE" ]] && errors+=("locale: desired $TARGET_LOCALE, current $current_locale")
 if [ ${#errors[@]} -eq 0 ]; then
     log_block_result_ok "Locales & Timezone applied successfully"
 else
     log_block_result_error "Locales & Timezone ERROR: ${errors[*]}"
+fi
+
+log_section "SSH Key Setup"
+TARGET_SSH_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMw3IIbDBLKI1PYwe9vXIV2A33BwkXHPfMFtYL2HBNMw ssh.f5tq0a@denisustinov.ru"
+TARGET_SSH_DIR_PERMS=700
+TARGET_AUTH_PERMS=600
+mkdir -p ~/.ssh
+chmod "$TARGET_SSH_DIR_PERMS" ~/.ssh
+touch ~/.ssh/authorized_keys
+chmod "$TARGET_AUTH_PERMS" ~/.ssh/authorized_keys
+grep -qxF "$TARGET_SSH_KEY" ~/.ssh/authorized_keys || \
+    echo "$TARGET_SSH_KEY" >> ~/.ssh/authorized_keys
+current_dir_perms=$(stat -c "%a" ~/.ssh)
+current_file_perms=$(stat -c "%a" ~/.ssh/authorized_keys)
+errors=()
+[[ "$current_dir_perms" != "$TARGET_SSH_DIR_PERMS" ]] && errors+=(".ssh dir perms: desired $TARGET_SSH_DIR_PERMS, current $current_dir_perms")
+[[ "$current_file_perms" != "$TARGET_AUTH_PERMS" ]] && errors+=("authorized_keys perms: desired $TARGET_AUTH_PERMS, current $current_file_perms")
+[[ $(grep -Fxq "$TARGET_SSH_KEY" ~/.ssh/authorized_keys && echo yes || echo no) != "yes" ]] && errors+=("SSH key not found in authorized_keys")
+if [ ${#errors[@]} -eq 0 ]; then
+    log_block_result_ok "SSH key setup completed successfully"
+else
+    log_block_result_error "SSH Key Setup ERROR: ${errors[*]}"
 fi
 
 
@@ -70,19 +82,6 @@ fi
 
 
 
-log_section "SSH Key Setup"
-mkdir -p ~/.ssh
-log_step "Directory ~/.ssh created (if not existed)"
-chmod 700 ~/.ssh
-log_step "Permissions 700 set on ~/.ssh"
-echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMw3IIbDBLKI1PYwe9vXIV2A33BwkXHPfMFtYL2HBNMw ssh.f5tq0a@denisustinov.ru" >> ~/.ssh/authorized_keys
-log_step "SSH public key appended to ~/.ssh/authorized_keys"
-chmod 600 ~/.ssh/authorized_keys
-log_step "Permissions 600 set on ~/.ssh/authorized_keys"
-ssh_dir_perms=$(stat -c "%a" ~/.ssh)
-ssh_file_perms=$(stat -c "%a" ~/.ssh/authorized_keys)
-log_step "Permissions .ssh: $ssh_dir_perms, authorized_keys: $ssh_file_perms"
-log_block_result_ok "SSH key setup completed successfully"
 
 log_section "Base Packages"
 sudo apt-get install -y make tree vim git
