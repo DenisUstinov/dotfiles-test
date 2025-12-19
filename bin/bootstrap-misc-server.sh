@@ -62,7 +62,7 @@ fi
 # - add public key to authorized_keys (without duplicates)
 # - verify permissions and key presence
 log_section "SSH Key Setup"
-TARGET_SSH_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMw3IIbDBLKI1PYwe9vXIV2A33BwkXHPfMFtYL2HBNMw ssh.f5tq0a@denisustinov.ru"
+: "${TARGET_SSH_KEY:?SSH public key not provided}"
 TARGET_SSH_DIR_PERMS=700
 TARGET_AUTH_PERMS=600
 errors=()
