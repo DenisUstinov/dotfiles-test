@@ -62,10 +62,10 @@ fi
 # - add public key to authorized_keys (without duplicates)
 # - verify permissions and key presence
 log_section "SSH Key Setup"
-TARGET_SSH_KEY=""
-read -rp "Enter SSH public key: " TARGET_SSH_KEY
 TARGET_SSH_DIR_PERMS=700
 TARGET_AUTH_PERMS=600
+TARGET_SSH_KEY=""
+read -rp "Enter SSH public key: " TARGET_SSH_KEY
 errors=()
 mkdir -p ~/.ssh
 chmod "$TARGET_SSH_DIR_PERMS" ~/.ssh
