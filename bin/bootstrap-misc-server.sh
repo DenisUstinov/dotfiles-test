@@ -5,10 +5,6 @@ log_section() {
     printf "\n%b\n" "$(tput setaf 4)$(tput bold)==> $1$(tput sgr0)"
 }
 
-log_step() {
-    printf "    %b\n" "$(tput setaf 10)✔ $1$(tput sgr0)"
-}
-
 log_block_result_ok() {
     printf "%b\n" "$(tput setaf 4)✓ $1$(tput sgr0)"
 }
@@ -23,17 +19,26 @@ log_warning() {
 
 sudo -v
 
+# System Update:
+# - update apt repositories
+# - upgrade all installed packages
 log_section "System Update"
 sudo apt-get update
 sudo apt-get -y upgrade
 log_block_result_ok "System Update completed successfully"
 
+# Cleanup:
+# - remove unused packages
+# - clean apt cache
 log_section "Cleanup"
 sudo apt-get -y autoremove
 sudo apt-get -y autoclean
 sudo apt-get clean
 log_block_result_ok "Cleanup completed successfully"
 
+# Locales & Timezone:
+# - set system timezone
+# - generate and apply system locale
 log_section "Locales & Timezone"
 TARGET_TIMEZONE="UTC"
 TARGET_LOCALE="C.UTF-8"
@@ -52,6 +57,10 @@ else
     log_block_result_error "Locales & Timezone ERROR: ${errors[*]}"
 fi
 
+# SSH Key Setup:
+# - create ~/.ssh if missing
+# - set correct permissions
+# - append public key if missing
 log_section "SSH Key Setup"
 TARGET_SSH_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMw3IIbDBLKI1PYwe9vXIV2A33BwkXHPfMFtYL2HBNMw ssh.f5tq0a@denisustinov.ru"
 TARGET_SSH_DIR_PERMS=700
@@ -74,6 +83,9 @@ else
     log_block_result_error "SSH Key Setup ERROR: ${errors[*]}"
 fi
 
+# Base Packages:
+# - install essential packages
+# - verify installation
 log_section "Base Packages"
 TARGET_PACKAGES=("make" "tree" "vim" "git")
 errors=()
@@ -88,6 +100,9 @@ else
     log_block_result_error "Base Packages installation ERROR: ${errors[*]}"
 fi
 
+# Kernel Parameters:
+# - add nosgx to GRUB_CMDLINE_LINUX_DEFAULT if missing
+# - update GRUB configuration
 log_section "Kernel Parameters"
 TARGET_KERNEL_PARAM="nosgx"
 errors=()
@@ -108,6 +123,9 @@ else
     log_block_result_error "Kernel Parameters ERROR: ${errors[*]}"
 fi
 
+# Git Configuration:
+# - create projects directory
+# - configure global git user.name and user.email
 log_section "Git Configuration"
 TARGET_GIT_NAME="Denis Ustinov"
 TARGET_GIT_EMAIL="83418606+DenisUstinov@users.noreply.github.com"
@@ -123,6 +141,10 @@ else
     log_block_result_error "Git Configuration ERROR: ${errors[*]}"
 fi
 
+# Docker Installation:
+# - add Docker repository key
+# - install Docker packages
+# - add current user to docker group
 log_section "Docker Installation"
 TARGET_PACKAGES=("docker-ce" "docker-ce-cli" "containerd.io" "docker-buildx-plugin" "docker-compose-plugin")
 errors=()
@@ -140,12 +162,5 @@ for pkg in "${TARGET_PACKAGES[@]}"; do
         errors+=("$pkg not installed")
 done
 groups "${SUDO_USER:-$USER}" | grep -q docker || errors+=("user ${SUDO_USER:-$USER} not in docker group")
-docker_version=$(docker --version 2>/dev/null || echo "not installed")
-docker_compose_version=$(docker compose version 2>/dev/null || echo "not installed")
 if [ ${#errors[@]} -eq 0 ]; then
-    log_block_result_ok "Docker installed successfully: $docker_version, Docker Compose: $docker_compose_version, User in docker group"
-else
-    log_block_result_error "Docker Installation ERROR: ${errors[*]}"
-fi
-
-log_warning "Reboot or re-login required for docker group to take effect"
+    log_block_result
