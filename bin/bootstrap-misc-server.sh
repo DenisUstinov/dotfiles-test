@@ -41,6 +41,8 @@ sudo timedatectl set-timezone "$TARGET_TIMEZONE"
 sudo apt-get install -y locales
 sudo locale-gen "$TARGET_LOCALE"
 sudo update-locale LANG="$TARGET_LOCALE"
+TEST_TARGET_TIMEZONE="GMT"
+TEST_TARGET_LOCALE="en_US.UTF-8"
 current_timezone=$(timedatectl show --property=Timezone --value)
 current_locale=$(locale | grep LANG= | cut -d= -f2)
 errors=()
