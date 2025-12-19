@@ -35,19 +35,27 @@ sudo apt-get clean
 log_block_result_ok "Cleanup completed successfully"
 
 log_section "Locales & Timezone"
+
+# Целевые значения для реальной установки
 TARGET_TIMEZONE="UTC"
 TARGET_LOCALE="C.UTF-8"
+
 sudo timedatectl set-timezone "$TARGET_TIMEZONE"
 sudo apt-get install -y locales
 sudo locale-gen "$TARGET_LOCALE"
 sudo update-locale LANG="$TARGET_LOCALE"
-TEST_TARGET_TIMEZONE="GMT"
+
+# Тестовые значения для проверки ошибки (симуляция несовпадения)
+TEST_TARGET_TIMEZONE="GMT"     # временно, чтобы проверить условие ошибки
 TEST_TARGET_LOCALE="en_US.UTF-8"
+
 current_timezone=$(timedatectl show --property=Timezone --value)
 current_locale=$(locale | grep LANG= | cut -d= -f2)
+
 errors=()
-[[ "$current_timezone" != "$TARGET_TIMEZONE" ]] && errors+=("timezone: desired $TARGET_TIMEZONE, current $current_timezone")
-[[ "$current_locale" != "$TARGET_LOCALE" ]] && errors+=("locale: desired $TARGET_LOCALE, current $current_locale")
+[[ "$current_timezone" != "$TEST_TARGET_TIMEZONE" ]] && errors+=("timezone: desired $TEST_TARGET_TIMEZONE, current $current_timezone")
+[[ "$current_locale" != "$TEST_TARGET_LOCALE" ]] && errors+=("locale: desired $TEST_TARGET_LOCALE, current $current_locale")
+
 if [ ${#errors[@]} -eq 0 ]; then
     log_block_result_ok "Locales & Timezone applied successfully"
 else
