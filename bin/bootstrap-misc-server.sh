@@ -73,8 +73,12 @@ log_step "git installed: $(dpkg -s git | grep Version | awk '{print $2}')"
 log_block_result "Base Packages installation completed successfully"
 
 log_section "Kernel Parameters"
-sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 nosgx"/' /etc/default/grub
-log_step "Added 'nosgx' to GRUB_CMDLINE_LINUX_DEFAULT"
+if grep -q 'GRUB_CMDLINE_LINUX_DEFAULT=.*nosgx' /etc/default/grub; then
+    log_step "'nosgx' already present in GRUB_CMDLINE_LINUX_DEFAULT"
+else
+    sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 nosgx"/' /etc/default/grub
+    log_step "Added 'nosgx' to GRUB_CMDLINE_LINUX_DEFAULT"
+fi
 sudo update-grub
 log_step "Grub configuration updated"
 grub_cmdline=$(grep GRUB_CMDLINE_LINUX_DEFAULT /etc/default/grub | cut -d'"' -f2)
