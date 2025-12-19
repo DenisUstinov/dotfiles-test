@@ -8,5 +8,5 @@ Executable scripts for automating tasks.
 ```bash
 curl -sL "" | bash
 ssh ubuntu@192.168.0.100 \
-  "TARGET_SSH_KEY='$(cat ~/.ssh/keys/local_misc_servir_1.pub)' curl -sL https://raw.githubusercontent.com/DenisUstinov/dotfiles-test/refs/heads/main/bin/bootstrap-misc-server.sh | bash"
+  "TARGET_SSH_KEY='$(cat ~/.ssh/keys/local_misc_servir_1.pub)' curl -sL "" | bash"
 ```
