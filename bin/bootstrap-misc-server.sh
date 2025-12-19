@@ -100,7 +100,7 @@ if [[ "$current_grub_cmdline" != *"$TARGET_KERNEL_PARAM"* ]]; then
     fi
 fi
 sudo update-grub
-grep -q "$TARGET_KERNEL_PARAM" /boot/grub/grub.cfg || \
+sudo grep -q "$TARGET_KERNEL_PARAM" /boot/grub/grub.cfg || \
     errors+=("GRUB parameter $TARGET_KERNEL_PARAM not applied")
 if [ ${#errors[@]} -eq 0 ]; then
     log_block_result_ok "Kernel parameters applied successfully"
