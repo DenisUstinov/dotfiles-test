@@ -29,7 +29,7 @@ log_block_result_ok "System Update completed successfully"
 
 # Cleanup:
 # - remove unused packages
-# - clean apt cache
+# - clean package cache
 log_section "Cleanup"
 sudo apt-get -y autoremove
 sudo apt-get -y autoclean
@@ -38,7 +38,7 @@ log_block_result_ok "Cleanup completed successfully"
 
 # Locales & Timezone:
 # - set system timezone
-# - generate and apply system locale
+# - generate and set system locale
 log_section "Locales & Timezone"
 TARGET_TIMEZONE="UTC"
 TARGET_LOCALE="C.UTF-8"
@@ -58,9 +58,9 @@ else
 fi
 
 # SSH Key Setup:
-# - create ~/.ssh if missing
-# - set correct permissions
-# - append public key if missing
+# - create .ssh directory and set permissions
+# - add public key to authorized_keys (without duplicates)
+# - verify permissions and key presence
 log_section "SSH Key Setup"
 TARGET_SSH_KEY="ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMw3IIbDBLKI1PYwe9vXIV2A33BwkXHPfMFtYL2HBNMw ssh.f5tq0a@denisustinov.ru"
 TARGET_SSH_DIR_PERMS=700
@@ -84,8 +84,8 @@ else
 fi
 
 # Base Packages:
-# - install essential packages
-# - verify installation
+# - install common development packages
+# - verify installation of each package
 log_section "Base Packages"
 TARGET_PACKAGES=("make" "tree" "vim" "git")
 errors=()
@@ -101,8 +101,9 @@ else
 fi
 
 # Kernel Parameters:
-# - add nosgx to GRUB_CMDLINE_LINUX_DEFAULT if missing
-# - update GRUB configuration
+# - add 'nosgx' to GRUB_CMDLINE_LINUX_DEFAULT
+# - update grub configuration
+# - verify parameter applied
 log_section "Kernel Parameters"
 TARGET_KERNEL_PARAM="nosgx"
 errors=()
@@ -125,7 +126,8 @@ fi
 
 # Git Configuration:
 # - create projects directory
-# - configure global git user.name and user.email
+# - set git global username and email
+# - verify configuration
 log_section "Git Configuration"
 TARGET_GIT_NAME="Denis Ustinov"
 TARGET_GIT_EMAIL="83418606+DenisUstinov@users.noreply.github.com"
@@ -142,9 +144,10 @@ else
 fi
 
 # Docker Installation:
-# - add Docker repository key
+# - set up Docker apt repository and keyrings
 # - install Docker packages
-# - add current user to docker group
+# - add user to docker group
+# - verify installation and group membership
 log_section "Docker Installation"
 TARGET_PACKAGES=("docker-ce" "docker-ce-cli" "containerd.io" "docker-buildx-plugin" "docker-compose-plugin")
 errors=()
@@ -163,4 +166,9 @@ for pkg in "${TARGET_PACKAGES[@]}"; do
 done
 groups "${SUDO_USER:-$USER}" | grep -q docker || errors+=("user ${SUDO_USER:-$USER} not in docker group")
 if [ ${#errors[@]} -eq 0 ]; then
-    log_block_result
+    log_block_result_ok "Docker installed successfully"
+else
+    log_block_result_error "Docker Installation ERROR: ${errors[*]}"
+fi
+
+log_warning "Reboot or re-login required for docker group to take effect"
