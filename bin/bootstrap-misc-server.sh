@@ -6,11 +6,15 @@ log_section() {
 }
 
 log_step() {
-    printf "    %b\n" "$(tput setaf 2)✔ $1$(tput sgr0)"
+    printf "    %b\n" "$(tput setaf 10)✔ $1$(tput sgr0)"
 }
 
-log_block_result() {
+log_block_result_ok() {
     printf "%b\n" "$(tput setaf 4)✓ $1$(tput sgr0)"
+}
+
+log_block_result_error() {
+    printf "%b\n" "$(tput setaf 1)✗ $1$(tput sgr0)"
 }
 
 log_warning() {
@@ -21,34 +25,40 @@ sudo -v
 
 log_section "System Update"
 sudo apt-get update
-log_step "apt-get update completed"
 sudo apt-get -y upgrade
-log_step "apt-get upgrade completed"
-log_step "Current kernel: $(uname -r)"
-log_block_result "System Update completed successfully"
+log_block_result_ok "System Update completed successfully"
 
 log_section "Cleanup"
 sudo apt-get -y autoremove
-log_step "apt-get autoremove completed"
 sudo apt-get -y autoclean
-log_step "apt-get autoclean completed"
 sudo apt-get clean
-log_step "apt-get clean completed"
-free_space=$(df -h / --output=avail | tail -1 | tr -d ' ')
-log_block_result "Cleanup completed, free space: $free_space"
+log_block_result_ok "Cleanup completed successfully"
 
 log_section "Locales & Timezone"
-sudo timedatectl set-timezone UTC
-log_step "Timezone set to UTC"
+TARGET_TIMEZONE="UTC"
+TARGET_LOCALE="C.UTF-8"
+sudo timedatectl set-timezone "$TARGET_TIMEZONE"
 sudo apt-get install -y locales
-log_step "Locales package installed"
-sudo locale-gen C.UTF-8
-log_step "Locale C.UTF-8 generated"
-sudo update-locale LANG=C.UTF-8
-log_step "System locale updated to C.UTF-8"
+sudo locale-gen "$TARGET_LOCALE"
+sudo update-locale LANG="$TARGET_LOCALE"
 current_timezone=$(timedatectl show --property=Timezone --value)
-current_locale=$LANG
-log_block_result "Locales & Timezone configured: Timezone=$current_timezone, Locale=$current_locale"
+current_locale=$(locale | grep LANG= | cut -d= -f2)
+errors=()
+[[ "$current_timezone" != "$TARGET_TIMEZONE" ]] && errors+=("timezone: desired $TARGET_TIMEZONE, current $current_timezone")
+[[ "$current_locale" != "$TARGET_LOCALE" ]] && errors+=("locale: desired $TARGET_LOCALE, current $current_locale")
+if [ ${#errors[@]} -eq 0 ]; then
+    log_block_result_ok "Locales & Timezone applied successfully"
+else
+    log_block_result_error "Locales & Timezone ERROR: ${errors[*]}"
+fi
+
+
+
+
+
+
+
+
 
 log_section "SSH Key Setup"
 mkdir -p ~/.ssh
@@ -59,22 +69,16 @@ echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIMw3IIbDBLKI1PYwe9vXIV2A33BwkXHPfMFtYL
 log_step "SSH public key appended to ~/.ssh/authorized_keys"
 chmod 600 ~/.ssh/authorized_keys
 log_step "Permissions 600 set on ~/.ssh/authorized_keys"
-log_block_result "SSH key setup completed successfully"
+ssh_dir_perms=$(stat -c "%a" ~/.ssh)
+ssh_file_perms=$(stat -c "%a" ~/.ssh/authorized_keys)
+log_step "Permissions .ssh: $ssh_dir_perms, authorized_keys: $ssh_file_perms"
+log_block_result_ok "SSH key setup completed successfully"
 
 log_section "Base Packages"
-sudo apt-get install -y make
-make_version=$(dpkg-query -W -f='${Version}' make)
-log_step "make installed: $make_version"
-sudo apt-get install -y tree
-tree_version=$(dpkg-query -W -f='${Version}' tree)
-log_step "tree installed: $tree_version"
-sudo apt-get install -y vim
-vim_version=$(dpkg-query -W -f='${Version}' vim)
-log_step "vim installed: $vim_version"
-sudo apt-get install -y git
-git_version=$(dpkg-query -W -f='${Version}' git)
-log_step "git installed: $git_version"
-log_block_result "Base Packages installation completed successfully"
+sudo apt-get install -y make tree vim git
+pkg_versions=$(dpkg -l make tree vim git | grep -E "make|tree|vim|git" | awk '{print $2, $3}')  # заменено на вывод всех пакетов сразу
+log_step "Installed package versions: $pkg_versions"
+log_block_result_ok "Base Packages installation completed successfully"
 
 log_section "Kernel Parameters"
 if grep -q 'GRUB_CMDLINE_LINUX_DEFAULT=.*nosgx' /etc/default/grub; then
@@ -91,7 +95,9 @@ fi
 sudo update-grub
 log_step "Grub configuration updated"
 grub_cmdline=$(grep GRUB_CMDLINE_LINUX_DEFAULT /etc/default/grub | cut -d'"' -f2)
-log_block_result "Kernel parameters applied: GRUB_CMDLINE_LINUX_DEFAULT=$grub_cmdline"
+grub_nosgx_check=$(grep 'linux' /boot/grub/grub.cfg | head -1 | grep -q 'nosgx' && echo "applied" || echo "not applied")
+log_step "GRUB nosgx parameter applied in grub.cfg: $grub_nosgx_check"
+log_block_result_ok "Kernel parameters applied: GRUB_CMDLINE_LINUX_DEFAULT=$grub_cmdline"
 
 log_section "Git Configuration"
 mkdir -p "$HOME/projects"
@@ -100,7 +106,7 @@ git config --global user.name "Denis Ustinov"
 log_step "Git user.name set: $(git config --global user.name)"
 git config --global user.email "83418606+DenisUstinov@users.noreply.github.com"
 log_step "Git user.email set: $(git config --global user.email)"
-log_block_result "Git configuration completed successfully"
+log_block_result_ok "Git configuration completed successfully"
 
 log_section "Docker Installation"
 sudo install -m 0755 -d /etc/apt/keyrings
@@ -121,6 +127,8 @@ sudo usermod -aG docker $USER
 log_step "User added to docker group"
 docker_version=$(docker --version | awk '{print $3}' | tr -d ',')
 in_docker_group=$(groups $USER | grep -q docker && echo "yes" || echo "no")
-log_block_result "Docker installed: $docker_version, User in docker group: $in_docker_group"
+docker_status=$(systemctl is-active docker)
+log_step "Docker service status: $docker_status"
+log_block_result_ok "Docker installed: $docker_version, User in docker group: $in_docker_group"
 
 log_warning "Reboot or re-login required for docker group to take effect"
