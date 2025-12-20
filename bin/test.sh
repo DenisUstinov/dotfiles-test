@@ -125,9 +125,17 @@ errors=()
 
 # Add GitHub CLI repository
 sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg   | sudo dd of=/etc/apt/keyrings/githubcli-archive-keyring.gpg
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/etc/apt/keyrings/githubcli-archive-keyring.gpg
 sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages   stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+# Verify GPG key fingerprint
+EXPECTED_GH_FINGERPRINT="9DC8 5822 9FC7 DD38 854A E2D8 8D81 803C 0EBF CD88"
+actual_fingerprint=$(gpg --with-fingerprint /etc/apt/keyrings/githubcli-archive-keyring.gpg 2>/dev/null | grep -A1 "Key fingerprint =" | tail -1 | sed 's/ //g')
+expected_fingerprint_clean="${EXPECTED_GH_FINGERPRINT// /}"
+if [[ "$actual_fingerprint" != "$expected_fingerprint_clean" ]]; then
+    log_block_result_error "GitHub CLI GPG key verification failed! Expected: $EXPECTED_GH_FINGERPRINT"
+    exit 1
+fi
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
 sudo apt-get update
 sudo apt-get install -y gh
 
