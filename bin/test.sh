@@ -21,7 +21,6 @@ log_info() {
     printf "%b\n" "$(tput setaf 8)    $1$(tput sgr0)"
 }
 
-# Security cleanup on exit
 cleanup() {
     unset GH_TOKEN 2>/dev/null || true
     unset TARGET_SSH_KEY 2>/dev/null || true
@@ -130,13 +129,9 @@ sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages   stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
 sudo apt-get update
 sudo apt-get install -y gh
-
-# Verify installation
 if ! command -v gh &> /dev/null; then
     errors+=("gh CLI not installed")
 fi
-
-# GitHub Authentication (only if gh installed successfully)
 if [ ${#errors[@]} -eq 0 ]; then
     GH_TOKEN=""
     while [[ -z "$GH_TOKEN" ]]; do
@@ -157,18 +152,14 @@ if [ ${#errors[@]} -eq 0 ]; then
         read -rsp "Enter GitHub Personal Access Token: " GH_TOKEN
         echo
     done
-    
     echo "$GH_TOKEN" | gh auth login --with-token
     unset GH_TOKEN
-    
-    # Verify authentication
     if ! gh auth status &> /dev/null; then
         errors+=("GitHub authentication failed")
     else
         log_block_result_ok "GitHub CLI authenticated successfully"
     fi
 fi
-
 if [ ${#errors[@]} -eq 0 ]; then
     log_block_result_ok "GitHub CLI installed and authenticated successfully"
 else
@@ -183,26 +174,18 @@ fi
 log_section "Git Configuration"
 errors=()
 mkdir -p "$HOME/projects"
-
-# Get user info from GitHub API
 TARGET_GIT_NAME=$(gh api user --jq '.name' 2>/dev/null || echo "")
 TARGET_GIT_EMAIL=$(gh api user/emails --jq '.[] | select(.email | contains("noreply")) | .email' 2>/dev/null || echo "")
-
-# Fallback if API calls fail
 if [ -z "$TARGET_GIT_NAME" ] || [ "$TARGET_GIT_NAME" == "null" ]; then
     read -rp "Failed to get name from GitHub. Enter your Git name: " TARGET_GIT_NAME
 fi
-
 if [ -z "$TARGET_GIT_EMAIL" ] || [ "$TARGET_GIT_EMAIL" == "null" ]; then
     read -rp "Failed to get email from GitHub. Enter your Git email: " TARGET_GIT_EMAIL
 fi
-
 git config --global user.name "$TARGET_GIT_NAME"
 git config --global user.email "$TARGET_GIT_EMAIL"
-
 [[ "$(git config --global user.name)" != "$TARGET_GIT_NAME" ]] && errors+=("Git user.name not set correctly")
 [[ "$(git config --global user.email)" != "$TARGET_GIT_EMAIL" ]] && errors+=("Git user.email not set correctly")
-
 if [ ${#errors[@]} -eq 0 ]; then
     log_block_result_ok "Git configuration applied successfully"
     log_block_result_ok "Git user: $TARGET_GIT_NAME <$TARGET_GIT_EMAIL>"
