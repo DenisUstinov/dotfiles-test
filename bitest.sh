@@ -17,6 +17,10 @@ log_warning() {
     printf "%b\n" "$(tput setaf 3)⚠ $1$(tput sgr0)"
 }
 
+log_info() {
+    printf "%b\n" "$(tput setaf 8)    $1$(tput sgr0)"
+}
+
 # Security cleanup on exit
 cleanup() {
     unset GH_TOKEN 2>/dev/null || true
@@ -121,9 +125,9 @@ errors=()
 
 # Add GitHub CLI repository
 sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/etc/apt/keyrings/githubcli-archive-keyring.gpg
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg   | sudo dd of=/etc/apt/keyrings/githubcli-archive-keyring.gpg
 sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages   stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
 sudo apt-get update
 sudo apt-get install -y gh
 
@@ -136,19 +140,19 @@ fi
 if [ ${#errors[@]} -eq 0 ]; then
     GH_TOKEN=""
     while [[ -z "$GH_TOKEN" ]]; do
-        echo ""
-        echo "Create GitHub Personal Access Token with these permissions:"
-        echo "  ✓ repo (Full control of private repositories)"
-        echo "  ✓ workflow (Update GitHub Actions workflows)"
-        echo "  ✓ read:user + user:email (Read user profile and email)"
-        echo ""
-        echo "How to create token:"
-        echo "1. Go to https://github.com/settings/tokens"
-        echo "2. Click 'Generate new token'"
-        echo "3. Select 'classic token'"
-        echo "4. Check: repo, workflow, read:user, user:email"
-        echo "5. Copy the token and paste below"
-        echo ""
+        log_info ""
+        log_info "Create GitHub Personal Access Token with these permissions:"
+        log_info "  ✓ repo (Full control of private repositories)"
+        log_info "  ✓ workflow (Update GitHub Actions workflows)"
+        log_info "  ✓ read:user + user:email (Read user profile and email)"
+        log_info ""
+        log_info "How to create token:"
+        log_info "1. Go to https://github.com/settings/tokens  "
+        log_info "2. Click 'Generate new token'"
+        log_info "3. Select 'classic token'"
+        log_info "4. Check: repo, workflow, read:user, user:email"
+        log_info "5. Copy the token and paste below"
+        log_info ""
         read -rsp "Enter GitHub Personal Access Token: " GH_TOKEN
         echo
     done
@@ -238,11 +242,11 @@ log_section "Docker Installation"
 TARGET_PACKAGES=("docker-ce" "docker-ce-cli" "containerd.io" "docker-buildx-plugin" "docker-compose-plugin")
 errors=()
 sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg   -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
 arch=$(dpkg --print-architecture)
 codename=$(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
-echo "deb [arch=$arch signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $codename stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+echo "deb [arch=$arch signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu   $codename stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update
 sudo apt-get install -y "${TARGET_PACKAGES[@]}"
 sudo usermod -aG docker "$USER"
