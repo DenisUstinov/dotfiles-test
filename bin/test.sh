@@ -150,7 +150,7 @@ if [ ${#errors[@]} -eq 0 ]; then
         log_info "1. Go to https://github.com/settings/tokens  "
         log_info "2. Click 'Generate new token'"
         log_info "3. Select 'classic token'"
-        log_info "4. Check: repo, workflow, read:user, user:email"
+        log_info "4. Check: repo, workflow, read:user, user:email, read:org"
         log_info "5. Copy the token and paste below"
         log_info ""
         read -rsp "Enter GitHub Personal Access Token: " GH_TOKEN
