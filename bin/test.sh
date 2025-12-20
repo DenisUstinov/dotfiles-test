@@ -101,7 +101,7 @@ fi
 # - install common development packages
 # - verify installation of each package
 log_section "Base Development Tools"
-TARGET_PACKAGES=("make" "tree" "vim" "git" "curl" "software-properties-common")
+TARGET_PACKAGES=("make" "tree" "vim" "git")
 errors=()
 sudo apt-get install -y "${TARGET_PACKAGES[@]}"
 for pkg in "${TARGET_PACKAGES[@]}"; do
