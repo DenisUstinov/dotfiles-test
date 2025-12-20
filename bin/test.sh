@@ -128,7 +128,7 @@ sudo mkdir -p /etc/apt/keyrings
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/etc/apt/keyrings/githubcli-archive-keyring.gpg
 sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
 # Verify GPG key fingerprint
-EXPECTED_GH_FINGERPRINT="9DC8 5822 9FC7 DD38 854A E2D8 8D81 803C 0EBF CD88"
+EXPECTED_GH_FINGERPRINT="C99B2F1E1D122E238A1C3CD68E075083"
 actual_fingerprint=$(gpg --with-fingerprint /etc/apt/keyrings/githubcli-archive-keyring.gpg 2>/dev/null | grep -A1 "Key fingerprint =" | tail -1 | sed 's/ //g')
 expected_fingerprint_clean="${EXPECTED_GH_FINGERPRINT// /}"
 if [[ "$actual_fingerprint" != "$expected_fingerprint_clean" ]]; then
@@ -250,7 +250,7 @@ sudo install -m 0755 -d /etc/apt/keyrings
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
 # Verify GPG key fingerprint
-EXPECTED_DOCKER_FINGERPRINT="0EBF CD88 9DC8 5822 9FC7 DD38 854A E2D8 8D81 803C"
+EXPECTED_DOCKER_FINGERPRINT="0EBFCD889DC858229FC7DD38854AE2D88D81803C"
 actual_fingerprint=$(gpg --with-fingerprint /etc/apt/keyrings/docker.asc 2>/dev/null | grep -A1 "Key fingerprint =" | tail -1 | sed 's/ //g')
 expected_fingerprint_clean="${EXPECTED_DOCKER_FINGERPRINT// /}"
 if [[ "$actual_fingerprint" != "$expected_fingerprint_clean" ]]; then
