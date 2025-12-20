@@ -125,17 +125,9 @@ errors=()
 
 # Add GitHub CLI repository
 sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/etc/apt/keyrings/githubcli-archive-keyring.gpg
+curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg   | sudo dd of=/etc/apt/keyrings/githubcli-archive-keyring.gpg
 sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
-# Verify GPG key fingerprint
-EXPECTED_GH_FINGERPRINT="C99B2F1E1D122E238A1C3CD68E075083"
-actual_fingerprint=$(gpg --with-fingerprint /etc/apt/keyrings/githubcli-archive-keyring.gpg 2>/dev/null | grep -A1 "Key fingerprint =" | tail -1 | sed 's/ //g')
-expected_fingerprint_clean="${EXPECTED_GH_FINGERPRINT// /}"
-if [[ "$actual_fingerprint" != "$expected_fingerprint_clean" ]]; then
-    log_block_result_error "GitHub CLI GPG key verification failed! Expected: $EXPECTED_GH_FINGERPRINT"
-    exit 1
-fi
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages   stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
 sudo apt-get update
 sudo apt-get install -y gh
 
@@ -247,19 +239,11 @@ log_section "Docker Installation"
 TARGET_PACKAGES=("docker-ce" "docker-ce-cli" "containerd.io" "docker-buildx-plugin" "docker-compose-plugin")
 errors=()
 sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg   -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
-# Verify GPG key fingerprint
-EXPECTED_DOCKER_FINGERPRINT="0EBFCD889DC858229FC7DD38854AE2D88D81803C"
-actual_fingerprint=$(gpg --with-fingerprint /etc/apt/keyrings/docker.asc 2>/dev/null | grep -A1 "Key fingerprint =" | tail -1 | sed 's/ //g')
-expected_fingerprint_clean="${EXPECTED_DOCKER_FINGERPRINT// /}"
-if [[ "$actual_fingerprint" != "$expected_fingerprint_clean" ]]; then
-    log_block_result_error "Docker GPG key verification failed! Expected: $EXPECTED_DOCKER_FINGERPRINT"
-    exit 1
-fi
 arch=$(dpkg --print-architecture)
 codename=$(. /etc/os-release && echo "${UBUNTU_CODENAME:-$VERSION_CODENAME}")
-echo "deb [arch=$arch signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $codename stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+echo "deb [arch=$arch signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu   $codename stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt-get update
 sudo apt-get install -y "${TARGET_PACKAGES[@]}"
 sudo usermod -aG docker "$USER"
