@@ -138,38 +138,42 @@ fi
 
 # GitHub Authentication (only if gh installed successfully)
 if [ ${#errors[@]} -eq 0 ]; then
-    (
-        GH_TOKEN=""
-        while [[ -z "$GH_TOKEN" ]]; do
-            log_info ""
-            log_info "Create GitHub Personal Access Token with these permissions:"
-            log_info "  ✓ repo (Full control of private repositories)"
-            log_info "  ✓ workflow (Update GitHub Actions workflows)"
-            log_info "  ✓ read:user + user:email (Read user profile and email)"
-            log_info "  ✓ read:org (Read organization membership and team information)"
-            log_info ""
-            log_info "How to create token:"
-            log_info "1. Go to https://github.com/settings/tokens    "
-            log_info "2. Click 'Generate new token'"
-            log_info "3. Select 'classic token'"
-            log_info "4. Check: repo, workflow, read:user, user:email, read:org"
-            log_info "5. Copy the token and paste below"
-            log_info ""
-            read -rsp "Enter GitHub Personal Access Token: " GH_TOKEN
-            echo
-        done
-        
-        echo "$GH_TOKEN" | gh auth login --with-token >/dev/null 2>&1
-        # Проверяем успешность аутентификации
-        gh auth status >/dev/null 2>&1
-    )
+    GH_TOKEN=""
+    while [[ -z "$GH_TOKEN" ]]; do
+        log_info ""
+        log_info "Create GitHub Personal Access Token with these permissions:"
+        log_info "  ✓ repo (Full control of private repositories)"
+        log_info "  ✓ workflow (Update GitHub Actions workflows)"
+        log_info "  ✓ read:user + user:email (Read user profile and email)"
+        log_info "  ✓ read:org (Read organization membership and team information)"
+        log_info ""
+        log_info "How to create token:"
+        log_info "1. Go to https://github.com/settings/tokens  "
+        log_info "2. Click 'Generate new token'"
+        log_info "3. Select 'classic token'"
+        log_info "4. Check: repo, workflow, read:user, user:email, read:org"
+        log_info "5. Copy the token and paste below"
+        log_info ""
+        read -rsp "Enter GitHub Personal Access Token: " GH_TOKEN
+        echo
+    done
     
-    if [ $? -eq 0 ]; then
-        log_block_result_ok "GitHub CLI authenticated successfully"
-    else
+    echo "$GH_TOKEN" | gh auth login --with-token
+    unset GH_TOKEN
+    
+    # Verify authentication
+    if ! gh auth status &> /dev/null; then
         errors+=("GitHub authentication failed")
-        log_block_result_error "GitHub authentication failed"
+    else
+        log_block_result_ok "GitHub CLI authenticated successfully"
     fi
+fi
+
+if [ ${#errors[@]} -eq 0 ]; then
+    log_block_result_ok "GitHub CLI installed and authenticated successfully"
+else
+    log_block_result_error "GitHub CLI Setup ERROR: ${errors[*]}"
+    exit 1
 fi
 
 # Git Configuration:
