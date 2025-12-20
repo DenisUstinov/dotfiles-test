@@ -145,6 +145,7 @@ if [ ${#errors[@]} -eq 0 ]; then
         log_info "  ✓ repo (Full control of private repositories)"
         log_info "  ✓ workflow (Update GitHub Actions workflows)"
         log_info "  ✓ read:user + user:email (Read user profile and email)"
+        log_info "  ✓ read:org (Read organization membership and team information)"
         log_info ""
         log_info "How to create token:"
         log_info "1. Go to https://github.com/settings/tokens  "
