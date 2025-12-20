@@ -235,8 +235,8 @@ for pkg in "${TARGET_PACKAGES[@]}"; do
         errors+=("$pkg not installed")
     fi
 done
-if ! groups "${SUDO_USER:-$USER}" | grep -q docker; then
-    errors+=("user ${SUDO_USER:-$USER} not in docker group")
+if ! getent group docker | grep -q "\b${SUDO_USER:-$USER}\b"; then
+    errors+=("docker group entry not found for user ${SUDO_USER:-$USER}")
 fi
 if [ ${#errors[@]} -eq 0 ]; then
     log_block_result_ok "Docker Installation completed successfully"
