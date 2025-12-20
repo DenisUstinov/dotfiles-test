@@ -74,11 +74,11 @@ TARGET_SSH_DIR_PERMS=700
 TARGET_AUTH_PERMS=600
 TARGET_SSH_KEY=""
 while [[ -z "$TARGET_SSH_KEY" ]]; do
-    OLD_HISTFILE="$HISTFILE"
-    OLD_HISTSIZE="$HISTSIZE"
+    OLD_HISTFILE="${HISTFILE:-}"
+    OLD_HISTSIZE="${HISTSIZE:-}"
     unset HISTFILE
     HISTSIZE=0
-    read -rp "Enter SSH public key: " TARGET_SSH_KEY
+    read -rsp "Enter GitHub Personal Access Token: " GH_TOKEN
     echo
     history -c
     export HISTFILE="$OLD_HISTFILE"
