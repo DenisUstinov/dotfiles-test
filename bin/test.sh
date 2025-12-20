@@ -185,7 +185,7 @@ mkdir -p "$HOME/projects"
 
 # Get user info from GitHub API
 TARGET_GIT_NAME=$(gh api user --jq '.name' 2>/dev/null || echo "")
-TARGET_GIT_EMAIL=$(gh api user/emails --jq '.[] | select(.primary == true and .verified == true) | .email' 2>/dev/null || echo "")
+TARGET_GIT_EMAIL=$(gh api user --jq '.email' 2>/dev/null || echo "")
 
 # Fallback if API calls fail
 if [ -z "$TARGET_GIT_NAME" ] || [ "$TARGET_GIT_NAME" == "null" ]; then
