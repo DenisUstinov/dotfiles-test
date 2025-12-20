@@ -121,8 +121,6 @@ fi
 # - verify authentication
 log_section "GitHub CLI Setup"
 errors=()
-
-# Add GitHub CLI repository
 sudo mkdir -p /etc/apt/keyrings
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg   | sudo dd of=/etc/apt/keyrings/githubcli-archive-keyring.gpg
 sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
