@@ -154,8 +154,6 @@ if [ ${#errors[@]} -eq 0 ]; then
     log_info "verify authentication"
     if ! gh auth status &> /dev/null; then
         errors+=("GitHub authentication failed")
-    else
-        log_block_result_ok "GitHub CLI authenticated successfully"
     fi
 fi
 if [ ${#errors[@]} -eq 0 ]; then
@@ -186,7 +184,6 @@ log_info "verify configuration"
 [[ "$(git config --global user.name)" != "$TARGET_GIT_NAME" ]] && errors+=("Git user.name not set correctly")
 [[ "$(git config --global user.email)" != "$TARGET_GIT_EMAIL" ]] && errors+=("Git user.email not set correctly")
 if [ ${#errors[@]} -eq 0 ]; then
-    log_block_result_ok "Git configuration applied successfully"
     log_block_result_ok "Git Configuration completed successfully"
 else
     log_block_result_error "Git Configuration ERROR: ${errors[*]}"
