@@ -149,7 +149,7 @@ if [ ${#errors[@]} -eq 0 ]; then
         echo
     done
     log_info "authenticate with GitHub token (full repo access for dev server)"
-    echo "$GH_TOKEN" | gh auth login --with-token
+    gh auth login --with-token <<< "$GH_TOKEN"
     unset GH_TOKEN
     log_info "verify authentication"
     if ! gh auth status &> /dev/null; then
