@@ -152,6 +152,8 @@ if [ ${#errors[@]} -eq 0 ]; then
     gh auth login --with-token <<< "$GH_TOKEN"
     unset GH_TOKEN
     log_info "verify authentication"
+    gh config set git_protocol ssh
+    log_info "set github protocol ssh"
     if ! gh auth status &> /dev/null; then
         errors+=("GitHub authentication failed")
     fi
