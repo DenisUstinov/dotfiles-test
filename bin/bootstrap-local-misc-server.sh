@@ -174,10 +174,10 @@ log_section "SSH Configuration"
 log_info "setup ssh key and agent"
 errors=()
 SSH_KEY="$HOME/.ssh/id_ed25519"
-: "${TARGET_GIT_EMAIL:=local}"
+if [ -z "${TARGET_GIT_EMAIL+x}" ]; then TARGET_GIT_EMAIL="local"; fi
 log_info "generate ssh key if not exists"
 if [ ! -f "$SSH_KEY" ]; then
-    ssh-keygen -t ed25519 -C "${TARGET_GIT_EMAIL}" -f "$SSH_KEY" -N "" || errors+=("SSH key generation failed")
+    ssh-keygen -t ed25519 -C "$TARGET_GIT_EMAIL" -f "$SSH_KEY" -N "" || errors+=("SSH key generation failed")
 else
     log_info "ssh key already exists"
 fi
