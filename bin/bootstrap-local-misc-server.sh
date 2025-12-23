@@ -173,10 +173,12 @@ fi
 log_section "SSH Configuration"
 errors=()
 SSH_KEY="$HOME/.ssh/id_ed25519"
+log_info "get git global username and email from GitHub API"
 TARGET_GIT_EMAIL=$(gh api user/emails --jq '.[] | select(.email | contains("noreply")) | .email' 2>/dev/null || echo "")
 if [ -z "$TARGET_GIT_EMAIL" ] || [ "$TARGET_GIT_EMAIL" == "null" ]; then
     errors+=("Failed to get GitHub email for SSH key")
 fi
+log_info "SSH key generation"
 if [ ${#errors[@]} -eq 0 ]; then
     mkdir -p "$HOME/.ssh"
     chmod 700 "$HOME/.ssh"
