@@ -171,28 +171,23 @@ fi
 
 # SSH Configuration:
 log_section "SSH Configuration"
-log_info "setup ssh key and agent"
 errors=()
 SSH_KEY="$HOME/.ssh/id_ed25519"
-log_info "get GitHub email for SSH key"
 TARGET_GIT_EMAIL=$(gh api user/emails --jq '.[] | select(.email | contains("noreply")) | .email' 2>/dev/null || echo "")
 if [ -z "$TARGET_GIT_EMAIL" ] || [ "$TARGET_GIT_EMAIL" == "null" ]; then
-    errors+=("Failed to get GitHub email for SSH key. Cannot continue.")
+    errors+=("Failed to get GitHub email for SSH key")
 fi
 if [ ${#errors[@]} -eq 0 ]; then
-    log_info "generate ssh key if not exists"
+    mkdir -p "$HOME/.ssh"
+    chmod 700 "$HOME/.ssh"
     if [ ! -f "$SSH_KEY" ]; then
         ssh-keygen -t ed25519 -C "$TARGET_GIT_EMAIL" -f "$SSH_KEY" -N "" || errors+=("SSH key generation failed")
-    else
-        log_info "ssh key already exists"
     fi
-    log_info "start ssh-agent"
     eval "$(ssh-agent -s)" >/dev/null 2>&1 || errors+=("ssh-agent start failed")
-    log_info "add ssh key to agent"
     ssh-add "$SSH_KEY" >/dev/null 2>&1 || errors+=("ssh-add failed")
-    log_info "verify ssh key loaded"
-    ssh-add -l >/dev/null 2>&1 || errors+=("no ssh keys loaded in agent")
 fi
+[ -f "$SSH_KEY" ] || errors+=("SSH key file not found")
+ssh-add -l | grep -q "$(ssh-keygen -lf "$SSH_KEY" | awk '{print $2}')" || errors+=("SSH key not loaded in agent")
 if [ ${#errors[@]} -eq 0 ]; then
     log_block_result_ok "SSH Configuration completed successfully"
 else
