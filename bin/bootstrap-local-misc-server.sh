@@ -118,40 +118,25 @@ fi
 # GitHub CLI Setup:
 log_section "GitHub CLI Setup"
 errors=()
-GH_TOKEN=""
+
 log_info "add GitHub CLI repository"
 sudo mkdir -p /etc/apt/keyrings
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/etc/apt/keyrings/githubcli-archive-keyring.gpg
 sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
 sudo apt-get update
+
 log_info "install gh package"
 sudo apt-get install -y gh
-log_info "authenticate with GitHub token"
-if [ ${#errors[@]} -eq 0 ]; then
-    while [[ -z "$GH_TOKEN" ]]; do
-        log_info ""
-        log_info "Create GitHub Personal Access Token with these permissions:"
-        log_info "  ✓ repo (Full control of private repositories)"
-        log_info "  ✓ workflow (Update GitHub Actions workflows)"
-        log_info "  ✓ read:user + user:email (Read user profile and email)"
-        log_info "  ✓ read:org (Read organization membership and team information)"
-        log_info ""
-        log_info "How to create token:"
-        log_info "1. Go to https://github.com/settings/tokens"
-        log_info "2. Click 'Generate new token'"
-        log_info "3. Select 'classic token'"
-        log_info "4. Check: repo, workflow, read:user, user:email, read:org"
-        log_info "5. Copy the token and paste below"
-        log_info ""
-        read -rsp "Enter GitHub Personal Access Token: " GH_TOKEN
-        echo
-    done
-    gh auth login --with-token <<< "$GH_TOKEN"
-    unset GH_TOKEN
-    log_info "set github protocol ssh"
-    gh config set git_protocol ssh
+
+log_info "authenticate via browser"
+if ! gh auth status &> /dev/null; then
+    gh auth login --web
 fi
+
+log_info "set GitHub git_protocol to ssh"
+gh config set git_protocol ssh
+
 log_info "verify installation, authentication, and git protocol"
 if ! command -v gh &> /dev/null; then
     errors+=("gh CLI not installed")
@@ -162,6 +147,7 @@ fi
 if [ "$(gh config get git_protocol)" != "ssh" ]; then
     errors+=("GitHub git_protocol not set to ssh")
 fi
+
 if [ ${#errors[@]} -eq 0 ]; then
     log_block_result_ok "GitHub CLI Setup completed successfully"
 else
