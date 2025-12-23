@@ -48,15 +48,16 @@ log_block_result_ok "Cleanup completed successfully"
 
 # Locales & Timezone:
 log_section "Locales & Timezone"
-log_info "set system timezone"
 TARGET_TIMEZONE="UTC"
 TARGET_LOCALE="C.UTF-8"
 errors=()
+log_info "set system timezone"
 sudo timedatectl set-timezone "$TARGET_TIMEZONE"
 log_info "generate and set system locale"
 sudo apt-get install -y locales
 sudo locale-gen "$TARGET_LOCALE"
 sudo update-locale LANG="$TARGET_LOCALE"
+log_info "verify current timezone and locale"
 current_timezone=$(timedatectl show --property=Timezone --value)
 current_locale=$(locale | grep LANG= | cut -d= -f2)
 [[ "$current_timezone" != "$TARGET_TIMEZONE" ]] && errors+=("timezone: desired $TARGET_TIMEZONE, current $current_timezone")
@@ -69,7 +70,6 @@ fi
 
 # SSH Key Setup:
 log_section "SSH Key Setup"
-log_info "create .ssh directory and set permissions"
 TARGET_SSH_DIR_PERMS=700
 TARGET_AUTH_PERMS=600
 TARGET_SSH_KEY=""
@@ -77,6 +77,7 @@ while [[ -z "$TARGET_SSH_KEY" ]]; do
     read -rp "Enter SSH public key: " TARGET_SSH_KEY
 done
 errors=()
+log_info "create .ssh directory and set permissions"
 mkdir -p ~/.ssh
 chmod "$TARGET_SSH_DIR_PERMS" ~/.ssh
 touch ~/.ssh/authorized_keys
@@ -98,9 +99,9 @@ fi
 
 # Base Development Tools:
 log_section "Base Development Tools"
-log_info "install common development packages"
 TARGET_PACKAGES=("make" "tree" "vim" "git")
 errors=()
+log_info "install common development packages"
 sudo apt-get install -y "${TARGET_PACKAGES[@]}"
 log_info "verify installation of each package"
 for pkg in "${TARGET_PACKAGES[@]}"; do
@@ -116,8 +117,9 @@ fi
 
 # GitHub CLI Setup:
 log_section "GitHub CLI Setup"
-log_info "add GitHub CLI repository"
 errors=()
+GH_TOKEN=""
+log_info "add GitHub CLI repository"
 sudo mkdir -p /etc/apt/keyrings
 curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/etc/apt/keyrings/githubcli-archive-keyring.gpg
 sudo chmod go+r /etc/apt/keyrings/githubcli-archive-keyring.gpg
@@ -125,11 +127,8 @@ echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/githubc
 sudo apt-get update
 log_info "install gh package"
 sudo apt-get install -y gh
-if ! command -v gh &> /dev/null; then
-    errors+=("gh CLI not installed")
-fi
+log_info "authenticate with GitHub token"
 if [ ${#errors[@]} -eq 0 ]; then
-    GH_TOKEN=""
     while [[ -z "$GH_TOKEN" ]]; do
         log_info ""
         log_info "Create GitHub Personal Access Token with these permissions:"
@@ -148,19 +147,20 @@ if [ ${#errors[@]} -eq 0 ]; then
         read -rsp "Enter GitHub Personal Access Token: " GH_TOKEN
         echo
     done
-    log_info "authenticate with GitHub token (full repo access for dev server)"
     gh auth login --with-token <<< "$GH_TOKEN"
     unset GH_TOKEN
-    log_info "verify authentication"
-    if ! gh auth status &> /dev/null; then
-        errors+=("GitHub authentication failed")
-    fi
     log_info "set github protocol ssh"
     gh config set git_protocol ssh
-    log_info "verify git protocol"
-    if [ "$(gh config get git_protocol)" != "ssh" ]; then
-        errors+=("GitHub git_protocol not set to ssh")
-    fi
+fi
+log_info "verify installation, authentication, and git protocol"
+if ! command -v gh &> /dev/null; then
+    errors+=("gh CLI not installed")
+fi
+if ! gh auth status &> /dev/null; then
+    errors+=("GitHub authentication failed")
+fi
+if [ "$(gh config get git_protocol)" != "ssh" ]; then
+    errors+=("GitHub git_protocol not set to ssh")
 fi
 if [ ${#errors[@]} -eq 0 ]; then
     log_block_result_ok "GitHub CLI Setup completed successfully"
@@ -175,11 +175,8 @@ errors=()
 SSH_KEY="$HOME/.ssh/id_ed25519"
 log_info "get git global username and email from GitHub API"
 TARGET_GIT_EMAIL=$(gh api user/emails --jq '.[] | select(.email | contains("noreply")) | .email' 2>/dev/null || echo "")
-if [ -z "$TARGET_GIT_EMAIL" ] || [ "$TARGET_GIT_EMAIL" == "null" ]; then
-    errors+=("Failed to get GitHub email for SSH key")
-fi
 log_info "SSH key generation"
-if [ ${#errors[@]} -eq 0 ]; then
+if [ -n "$TARGET_GIT_EMAIL" ] && [ "$TARGET_GIT_EMAIL" != "null" ]; then
     mkdir -p "$HOME/.ssh"
     chmod 700 "$HOME/.ssh"
     if [ ! -f "$SSH_KEY" ]; then
@@ -187,7 +184,10 @@ if [ ${#errors[@]} -eq 0 ]; then
     fi
     eval "$(ssh-agent -s)" >/dev/null 2>&1 || errors+=("ssh-agent start failed")
     ssh-add "$SSH_KEY" >/dev/null 2>&1 || errors+=("ssh-add failed")
+else
+    errors+=("Failed to get GitHub email for SSH key")
 fi
+log_info "verify SSH key existence and agent loading"
 [ -f "$SSH_KEY" ] || errors+=("SSH key file not found")
 ssh-add -l | grep -q "$(ssh-keygen -lf "$SSH_KEY" | awk '{print $2}')" || errors+=("SSH key not loaded in agent")
 if [ ${#errors[@]} -eq 0 ]; then
@@ -198,8 +198,10 @@ fi
 
 # Git Configuration:
 log_section "Git Configuration"
-log_info "create projects directory"
 errors=()
+TARGET_GIT_NAME=""
+TARGET_GIT_EMAIL=""
+log_info "create projects directory"
 mkdir -p "$HOME/projects"
 log_info "get git global username and email from GitHub API"
 TARGET_GIT_NAME=$(gh api user --jq '.name' 2>/dev/null || echo "")
@@ -213,7 +215,7 @@ fi
 log_info "set git global username and email"
 git config --global user.name "$TARGET_GIT_NAME"
 git config --global user.email "$TARGET_GIT_EMAIL"
-log_info "verify configuration"
+log_info "verify git global username and email configuration"
 [[ "$(git config --global user.name)" != "$TARGET_GIT_NAME" ]] && errors+=("Git user.name not set correctly")
 [[ "$(git config --global user.email)" != "$TARGET_GIT_EMAIL" ]] && errors+=("Git user.email not set correctly")
 if [ ${#errors[@]} -eq 0 ]; then
@@ -224,10 +226,10 @@ fi
 
 # Kernel Parameters:
 log_section "Kernel Parameters"
-log_info "add 'nosgx' to GRUB_CMDLINE_LINUX_DEFAULT"
 TARGET_KERNEL_PARAM="nosgx"
 errors=()
 current_grub_cmdline=$(grep -oP '(?<=GRUB_CMDLINE_LINUX_DEFAULT=")[^"]*' /etc/default/grub)
+log_info "add '$TARGET_KERNEL_PARAM' to GRUB_CMDLINE_LINUX_DEFAULT if not present"
 if [[ "$current_grub_cmdline" != *"$TARGET_KERNEL_PARAM"* ]]; then
     if [ -z "$current_grub_cmdline" ]; then
         sudo sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT=""/GRUB_CMDLINE_LINUX_DEFAULT="'"$TARGET_KERNEL_PARAM"'"/' /etc/default/grub
@@ -237,9 +239,8 @@ if [[ "$current_grub_cmdline" != *"$TARGET_KERNEL_PARAM"* ]]; then
 fi
 log_info "update grub configuration"
 sudo update-grub
-log_info "verify parameter applied"
-sudo grep -q "$TARGET_KERNEL_PARAM" /boot/grub/grub.cfg || \
-    errors+=("GRUB parameter $TARGET_KERNEL_PARAM not applied")
+log_info "verify GRUB parameter '$TARGET_KERNEL_PARAM' applied"
+sudo grep -q "$TARGET_KERNEL_PARAM" /boot/grub/grub.cfg || errors+=("GRUB parameter $TARGET_KERNEL_PARAM not applied")
 if [ ${#errors[@]} -eq 0 ]; then
     log_block_result_ok "Kernel Parameters completed successfully"
 else
@@ -248,9 +249,9 @@ fi
 
 # Docker Installation:
 log_section "Docker Installation"
-log_info "set up Docker apt repository and keyrings"
 TARGET_PACKAGES=("docker-ce" "docker-ce-cli" "containerd.io" "docker-buildx-plugin" "docker-compose-plugin")
 errors=()
+log_info "set up Docker apt repository and keyrings"
 sudo install -m 0755 -d /etc/apt/keyrings
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
@@ -262,7 +263,7 @@ log_info "install Docker packages"
 sudo apt-get install -y "${TARGET_PACKAGES[@]}"
 log_info "add user to docker group"
 sudo usermod -aG docker "$USER"
-log_info "verify installation and group membership"
+log_info "verify Docker installation and docker group membership"
 for pkg in "${TARGET_PACKAGES[@]}"; do
     if ! dpkg-query -W -f='${Status}' "$pkg" 2>/dev/null | grep -q "install ok installed"; then
         errors+=("$pkg not installed")
