@@ -177,20 +177,22 @@ SSH_KEY="$HOME/.ssh/id_ed25519"
 log_info "get GitHub email for SSH key"
 TARGET_GIT_EMAIL=$(gh api user/emails --jq '.[] | select(.email | contains("noreply")) | .email' 2>/dev/null || echo "")
 if [ -z "$TARGET_GIT_EMAIL" ] || [ "$TARGET_GIT_EMAIL" == "null" ]; then
-    read -rp "Failed to get email from GitHub. Enter your Git email: " TARGET_GIT_EMAIL
+    errors+=("Failed to get GitHub email for SSH key. Cannot continue.")
 fi
-log_info "generate ssh key if not exists"
-if [ ! -f "$SSH_KEY" ]; then
-    ssh-keygen -t ed25519 -C "$TARGET_GIT_EMAIL" -f "$SSH_KEY" -N "" || errors+=("SSH key generation failed")
-else
-    log_info "ssh key already exists"
+if [ ${#errors[@]} -eq 0 ]; then
+    log_info "generate ssh key if not exists"
+    if [ ! -f "$SSH_KEY" ]; then
+        ssh-keygen -t ed25519 -C "$TARGET_GIT_EMAIL" -f "$SSH_KEY" -N "" || errors+=("SSH key generation failed")
+    else
+        log_info "ssh key already exists"
+    fi
+    log_info "start ssh-agent"
+    eval "$(ssh-agent -s)" >/dev/null 2>&1 || errors+=("ssh-agent start failed")
+    log_info "add ssh key to agent"
+    ssh-add "$SSH_KEY" >/dev/null 2>&1 || errors+=("ssh-add failed")
+    log_info "verify ssh key loaded"
+    ssh-add -l >/dev/null 2>&1 || errors+=("no ssh keys loaded in agent")
 fi
-log_info "start ssh-agent"
-eval "$(ssh-agent -s)" >/dev/null 2>&1 || errors+=("ssh-agent start failed")
-log_info "add ssh key to agent"
-ssh-add "$SSH_KEY" >/dev/null 2>&1 || errors+=("ssh-add failed")
-log_info "verify ssh key loaded"
-ssh-add -l >/dev/null 2>&1 || errors+=("no ssh keys loaded in agent")
 if [ ${#errors[@]} -eq 0 ]; then
     log_block_result_ok "SSH Configuration completed successfully"
 else
