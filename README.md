@@ -32,3 +32,7 @@ rm script.sh
 ```bash
 sudo reboot
 ```
+
+**Show your public SSH key and copy it to GitHub**
+```bash
+cat ~/.ssh/id_ed25519.pub
