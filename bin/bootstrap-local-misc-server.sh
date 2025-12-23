@@ -174,7 +174,11 @@ log_section "SSH Configuration"
 log_info "setup ssh key and agent"
 errors=()
 SSH_KEY="$HOME/.ssh/id_ed25519"
-: "${TARGET_GIT_EMAIL:=$(whoami)@$(hostname)}"
+log_info "get GitHub email for SSH key"
+TARGET_GIT_EMAIL=$(gh api user/emails --jq '.[] | select(.email | contains("noreply")) | .email' 2>/dev/null || echo "")
+if [ -z "$TARGET_GIT_EMAIL" ] || [ "$TARGET_GIT_EMAIL" == "null" ]; then
+    read -rp "Failed to get email from GitHub. Enter your Git email: " TARGET_GIT_EMAIL
+fi
 log_info "generate ssh key if not exists"
 if [ ! -f "$SSH_KEY" ]; then
     ssh-keygen -t ed25519 -C "$TARGET_GIT_EMAIL" -f "$SSH_KEY" -N "" || errors+=("SSH key generation failed")
