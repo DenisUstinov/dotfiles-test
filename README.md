@@ -36,3 +36,9 @@ sudo reboot
 **Show your public SSH key and copy it to GitHub**
 ```bash
 cat ~/.ssh/id_ed25519.pub
+```
+
+**Test SSH connection to GitHub**
+```bash
+ssh -T git@github.com
+```
