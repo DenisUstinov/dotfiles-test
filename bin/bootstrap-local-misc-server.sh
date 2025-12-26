@@ -251,9 +251,12 @@ fi
 log_info "set git global username and email"
 git config --global user.name "$TARGET_GIT_NAME"
 git config --global user.email "$TARGET_GIT_EMAIL"
+log_info "set git default branch to main"
+git config --global init.defaultBranch main
 log_info "verify git global username and email configuration"
 [[ "$(git config --global user.name)" != "$TARGET_GIT_NAME" ]] && errors+=("Git user.name not set correctly")
 [[ "$(git config --global user.email)" != "$TARGET_GIT_EMAIL" ]] && errors+=("Git user.email not set correctly")
+[[ "$(git config --global init.defaultBranch)" != "main" ]] && errors+=("Git init.defaultBranch not set correctly")
 if [ ${#errors[@]} -eq 0 ]; then
     log_block_result_ok "Git Configuration completed successfully"
 else
