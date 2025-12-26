@@ -99,7 +99,7 @@ fi
 
 # Base Development Tools:
 log_section "Base Development Tools"
-TARGET_PACKAGES=("make" "tree" "vim" "git")
+TARGET_PACKAGES=("make" "tree" "vim" "git" "python3-poetry")
 errors=()
 log_info "install common development packages"
 sudo apt-get install -y "${TARGET_PACKAGES[@]}"
